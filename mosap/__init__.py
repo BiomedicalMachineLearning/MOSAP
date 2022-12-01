@@ -1,4 +1,4 @@
 """Module initialization."""
 
 __version__ = "0.1.0"
-from .mosap import MultiOmicsSpatialObject
+from .mosap import MultiSpatialOmics
