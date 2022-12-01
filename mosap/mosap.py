@@ -13,7 +13,7 @@ import h5py
 from spatialOmics import SpatialOmics
 
 #light weight object
-class MultiSpatialOmics(SpatialOmics):
+class MultiOmicsSpatial(SpatialOmics):
 	# to create a blank object, inherit from SpatialOmics data 
 	    cmaps = {
         'default': sns.color_palette('Reds', as_cmap=True),
