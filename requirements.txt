@@ -9,7 +9,6 @@ aicsimageio>=4.9.3
 jupyterlab>=3.5.0
 cellpose-napari>=0.1.5
 napari-aicsimageio>=0.7.2
-napari-serialcellpose>=0.2.2
 stardist-napari
 ai4scr-spatial-omics>=0.1.1
 tables>=3.7.0
