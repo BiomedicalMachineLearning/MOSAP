@@ -20,8 +20,8 @@ def read_version(filepath: str) -> str:
     return match.group(1)
 
 
-# with open("requirements.txt") as f:
-#     requirements = f.read().splitlines()
+with open("requirements.txt") as f:
+    requirements = f.read().splitlines()
 
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
@@ -29,20 +29,22 @@ with open("HISTORY.rst") as history_file:
 with open("README.md", encoding="utf8") as readme_file:
     readme = readme_file.read()
 
-# ease installation during development
-vcs = re.compile(r"(git|svn|hg|bzr)\+")
-try:
-    with open("requirements.txt") as fp:
-        VCS_REQUIREMENTS = [
-            str(requirement)
-            for requirement in parse_requirements(fp)
-            if vcs.search(str(requirement))
-        ]
-except FileNotFoundError:
-    # requires verbose flags to show
-    print("requirements.txt not found.")
-    VCS_REQUIREMENTS = []
-
+# # ease installation during development
+# # (?# vcs = re.compile(r"(git|svn|hg|bzr)\+"))
+# try:
+#     with open("requirements.txt") as fp:
+#         print('Here checkpoint')
+#         VCS_REQUIREMENTS = [
+#             print(str(requirement))
+#             for requirement in parse_requirements(fp)
+#             # if vcs.search(str(requirement))
+#         ]
+#         print(VCS_REQUIREMENTS)
+# except FileNotFoundError:
+#     # requires verbose flags to show
+#     print("requirements.txt not found.")
+#     VCS_REQUIREMENTS = []
+print('-------requirements: ', requirements)
 setup_requirements = []
 setup(
     author="Genomics and Machine Learning lab",
@@ -60,7 +62,7 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     description="A Multi-Omics Spatial Analysis Platform (MOSAP)",
-    install_requires=VCS_REQUIREMENTS,
+    install_requires=requirements,
     license="BSD license",
     long_description=readme + "\n\n" + history,
     include_package_data=True,
