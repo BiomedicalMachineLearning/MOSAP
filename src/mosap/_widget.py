@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     import napari
 
 
-class ExampleQWidget(QWidget):
+class MultiOmicRegistrationWidget(QWidget):
     # your QWidget.__init__ can optionally request the napari viewer instance
     # in one of two ways:
     # 1. use a parameter called `napari_viewer`, as done here
@@ -35,12 +35,12 @@ class ExampleQWidget(QWidget):
 
 
 @magic_factory
-def example_magic_widget(img_layer: "napari.layers.Image"):
-    print(f"you have selected magic widget {img_layer}")
+def Transcript_Selection_Widget(img_layer: "napari.layers.Image"):
+    print(f"you have selected Transcript widget {img_layer}")
 
 
 # Uses the `autogenerate: true` flag in the plugin manifest
 # to indicate it should be wrapped as a magicgui to autogenerate
 # a widget.
-def example_function_widget(img_layer: "napari.layers.Image"):
-    print(f"you have selected function widget {img_layer}")
+def Heterogeneity_Vis_widget(img_layer: "napari.layers.Image"):
+    print(f"you have selected Heterogeneity widget {img_layer}")
