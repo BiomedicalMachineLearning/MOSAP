@@ -10,7 +10,7 @@
 
 ## Installation
 
-This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
+
 
 The package is developed in Python and require napari to run the GUI
 
@@ -62,3 +62,7 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
 [PyPI]: https://pypi.org/
+
+## Acknowledge
+
+This [napari] plugin was generated using [@napari]'s [cookiecutter-napari-plugin] template.
