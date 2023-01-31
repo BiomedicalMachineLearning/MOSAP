@@ -1,6 +1,7 @@
 h5py>=3.7.0
 scikit-image>=0.19.3
 scikit-learn>=1.1.2
+SimpleITK
 seaborn>=0.11.2
 tqdm>=4.64.1
 aicsimageio>=4.9.3
