@@ -31,13 +31,13 @@ contributions:
       title: Spatial heterogeneity analysis
   readers:
     - command: mosap.get_reader
-      accepts_directories: false
-      filename_patterns: ['*.npy']
+      filename_patterns: ['*']
+      accepts_directories: true
   widgets:
     - command: mosap.make_multiomic_registration
-      display_name: MultiOmic Registration QWidget
+      display_name: MultiOmic registration
     - command: mosap.make_transcript_selection_widget
-      display_name: Marker Colocalisation Analysis
+      display_name: Marker colocalisation Analysis
     - command: mosap.make_heterogeneity_vis_widget
       autogenerate: true
       display_name: Spatial heterogeneity analysis
