@@ -1,6 +1,6 @@
 from skimage import measure
 from scipy import ndimage as ndi
-import cv2
+# import cv2
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
 from typing import Any, Union, Optional
@@ -158,3 +158,20 @@ def inverse_transform_multiple_points(xform, points):
 
 def save_transformation_model(transform_model, fn:Union[str, Path]):
     sitk.WriteTransform(transform_model, fn)
+
+def read_transformation_model(fn:str):
+    transformer = sitk.ReadTransform(fn)
+    return transformer
+# bspline_transform = sitk.ReadTransform('BCC_Skin1_r2_registration_bspline_transform.tfm')
+
+def overlay_pil_imgs(foreground, background, best_loc = (0,0), alpha=0.5):
+    """ overlay two images to visualize the registration """
+    newimg1 = Image.new('RGBA', size=background.size, color=(0, 0, 0, 0))
+    newimg1.paste(foreground, best_loc)
+    newimg1.paste(background, (0, 0))
+
+    newimg2 = Image.new('RGBA', size=background.size, color=(0, 0, 0, 0))
+    newimg2.paste(background, (0, 0))
+    newimg2.paste(foreground, best_loc)
+    result = Image.blend(newimg1, newimg2, alpha=alpha)
+    return result
