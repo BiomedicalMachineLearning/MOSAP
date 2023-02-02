@@ -13,13 +13,14 @@ from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QVBoxLayout, QGrou
 from qtpy.QtWidgets import QLabel, QComboBox, QGridLayout, QFileDialog,QProgressBar
 from mosap.mosap  import SpatialOmics
 import os
-if TYPE_CHECKING:
-    import napari
+# if TYPE_CHECKING:
+import napari
 from napari.utils.notifications import show_info
 
 
 # import SimpleITK as sitk
-from mosap.registration import save_transformation_model, read_transformation_model
+from mosap.registration import save_transformation_model, read_transformation_model, get_itk_from_pil
+from mosap.registration import affine_registration_slides, bspline_registration_slides
 class MultiOmicRegistrationWidget(QWidget):
     TRANSFORMATIONS = {
         "translation": "Translation",
@@ -43,13 +44,8 @@ class MultiOmicRegistrationWidget(QWidget):
         vbox_layout.setContentsMargins(9, 9, 9, 9)
 
         self.setLayout(vbox_layout)
-        # btn = QPushButton("Click me!")
-        # btn.clicked.connect(self._on_click)
-
-        # self.setLayout(QHBoxLayout())
-        # self.layout().addWidget(btn)
+        
         self.createImageOptionWidget()
-
 
     def _on_click(self):
         print("napari has", len(self.viewer.layers), "layers")
@@ -97,7 +93,7 @@ class MultiOmicRegistrationWidget(QWidget):
         try:
             self._load_tmat(fname)
         except Exception:
-            show_info(f"Could not load transformation matrix from {fname}")
+            show_info(f"Could not load transformer from {fname}")
             return
 
         self.status.setText(f'Loaded from "{os.path.basename(fname)}"')
@@ -137,15 +133,28 @@ class MultiOmicRegistrationWidget(QWidget):
         tooltip_message_moving_image = "Image to be registered/transformed."
         tooltip_message_reference_image = "Reference image for registration"
         tooltip_transformation = "Type of applied transformation."
+
+        available_images = []
+        for layer in  self.viewer.layers:
+            if isinstance(layer, napari.layers.image.image.Image):
+                available_images.append(layer)
+
         self.moving_image = QComboBox(groupBox)
         self.moving_image.setToolTip(tooltip_message_moving_image)
-        self.moving_image.addItems(['mov1', 'mov2'])
+        moving_options = [i.name for i in available_images]
+        self.moving_image.addItems(moving_options)
+        self.moving_image.setCurrentText(moving_options[0])
         self.moving_image.currentIndexChanged.connect(
             self._move_image_onchange
         )
         self.ref_image = QComboBox(groupBox)
         self.ref_image.setToolTip(tooltip_message_reference_image)
-        self.ref_image.addItems(['ref1','ref2'])
+        ref_options = [i.name for i in available_images]
+        self.ref_image.addItems(ref_options)
+        self.ref_image.setCurrentText(ref_options[1])
+        self.ref_image.currentIndexChanged.connect(
+            self._ref_image_onchange
+        )
         # self.image.currentIndexChanged.connect(self._image_onchange)
         reg_img_label = QLabel("Register Image")
         reg_img_label.setToolTip(tooltip_message_moving_image)
@@ -165,9 +174,7 @@ class MultiOmicRegistrationWidget(QWidget):
             self._transformation_onchange
         )
         
-        self.ref_image.currentIndexChanged.connect(
-            self._ref_image_onchange
-        )
+        
         tmat_label = QLabel("Transformer file")
         
         tmat_label.setToolTip('Registration transformers can be loaded and saved from files')
@@ -187,9 +194,9 @@ class MultiOmicRegistrationWidget(QWidget):
         self.btn_register.clicked.connect(self._btn_register_onclick)
         self.btn_transform.clicked.connect(self._btn_transform_onclick)
 
-        self.pbar_label = QLabel()
-        self.pbar = QProgressBar()
-        self.pbar.setVisible(False)
+        # self.pbar_label = QLabel()
+        # self.pbar = QProgressBar()
+        # self.pbar.setVisible(False)
         
 
         grid = QGridLayout()
@@ -206,14 +213,14 @@ class MultiOmicRegistrationWidget(QWidget):
         grid.addWidget(self.status, 5,1)
         grid.addWidget(self.btn_register, 6,0)
         grid.addWidget(self.btn_transform, 6,1)
-        grid.addWidget(self.pbar_label, 7,0)
-        grid.addWidget(self.pbar, 7,1)
+        # grid.addWidget(self.pbar_label, 7,0)
+        # grid.addWidget(self.pbar, 7,1)
         # vbox.addWidget(btn)
         vbox.addLayout(grid)
         groupBox.setLayout(vbox)
         self.layout().addWidget(groupBox)
         
-        self.layout().addWidget(groupBox)
+        # self.layout().addWidget(groupBox)
 
     def _transformation_onchange(self, value: str):
         def without(d, key):
@@ -242,18 +249,36 @@ class MultiOmicRegistrationWidget(QWidget):
     
     def _run(self, action):
         import numpy as np
-        
-
-        # transformations = {
-        #     "translation": StackReg.TRANSLATION,
-        #     "rigid_body": StackReg.RIGID_BODY,
-        #     "scaled_rotation": StackReg.SCALED_ROTATION,
-        #     "affine": StackReg.AFFINE,
-        #     "bilinear": StackReg.BILINEAR,
-        # }
-
-        transformation = self.registration_model.currentData()
-        print('Perform SITK', transformation)
+        from PIL import Image
+        if action == 'transform':
+            transformer = self.tmats
+            transformation = self.registration_model.currentData()
+            print('Perform transform', transformation)
+            if transformation == 'affine':
+                pass
+            elif transformation == 'bspline':
+                pass
+        elif action == 'register':
+            if self.registration_model.currentData() == 'affine':
+                
+                fixed_img, moving_img = None, None
+                for layer in self.viewer.layers:
+                    if layer.name == self.moving_image.currentText():
+                        moving_img = layer.data
+                    elif layer.name == self.ref_image.currentText():
+                        fixed_img = layer.data
+                    else:
+                        Exception('Images not found')
+                moving_img = Image.fromarray(moving_img)
+                fixed_img = Image.fromarray(fixed_img)
+                # convert color images (3 channels) to gray scale images
+                moving_img_gray = moving_img.convert('L')
+                fixed_img_gray = fixed_img.convert('L')
+                moving_img_gray = get_itk_from_pil(moving_img_gray)
+                fixed_img_gray = get_itk_from_pil(fixed_img_gray)
+                self.tmats = affine_registration_slides(moving_img_gray, fixed_img_gray, plot_registration_progress=False)
+                show_info('Registered image: ',self.moving_image.currentText())
+                
         # moving_average = (
         #     self.moving_average.value()
         #     if self.perform_moving_average.isChecked()
