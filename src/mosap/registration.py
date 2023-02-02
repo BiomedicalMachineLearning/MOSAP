@@ -4,7 +4,10 @@ from scipy import ndimage as ndi
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
 from typing import Any, Union, Optional
+from scipy.optimize import minimize
 from pathlib import Path
+from PIL import Image
+import numpy as np
 
 #run internally
 def start_plot():
@@ -145,6 +148,21 @@ def bspline_registration_slides(fixed_ref_img, moving_img, plot_registration_pro
                                                sitk.Cast(moving_img, sitk.sitkFloat32))
     return bspline_transform
 
+def inverse_transform_point(xform, p):
+    """
+    Returns the inverse-transform of a point.
+
+    :param sitk.Transform xform: The transform to invert
+    :param (float,float)|[float|float]|np.ndarray p: The point to find inverse for
+    :return np.ndarray, bool: The point and whether the operation succeeded or not
+    """
+
+    def fun(x):
+        return np.linalg.norm(xform.TransformPoint(x) - p)
+
+    p = np.array(p)
+    res = minimize(fun, p, method='Powell')
+    return res.x, res.success
 
 def inverse_transform_multiple_points(xform, points):
     """
@@ -175,3 +193,13 @@ def overlay_pil_imgs(foreground, background, best_loc = (0,0), alpha=0.5):
     newimg2.paste(foreground, best_loc)
     result = Image.blend(newimg1, newimg2, alpha=alpha)
     return result
+
+def get_itk_from_pil(pil_img):
+    """Converts Pillow image into ITK image
+    """
+    return sitk.GetImageFromArray(np.array(pil_img))
+
+def get_pil_from_itk(itk_img):
+    """Converts ITK image into Pillow Image
+    """
+    return Image.fromarray(sitk.GetArrayFromImage(itk_img).astype(np.uint8))
