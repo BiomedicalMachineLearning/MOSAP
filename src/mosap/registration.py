@@ -174,6 +174,38 @@ def inverse_transform_multiple_points(xform, points):
         transformed_points.append(result)
     return transformed_points
 
+def sitk_transform_rgb(moving_rgb_img, fixed_rgb_img, transform, interpolator = sitk.sitkLanczosWindowedSinc):
+    """Applies a Simple ITK transform (e.g. Affine, B-spline) to an RGB image
+    
+    The transform is applied to each channel
+    
+    Parameters
+    ----------
+    moving_rgb_img : Pillow Image 
+        This image will be transformed to produce the output image
+    fixed_rgb_img : Pillow Image
+        This reference image provides the output information (spacing, size, and direction) of the output image
+    transform : SimpleITK transform
+        Generated from image registration
+    interpolator : SimpleITK interpolator
+    
+    Returns
+    -------
+    rgb_transformed : Pillow Image
+        Transformed moving image 
+    """
+    transformed_channels = []
+    r_moving, g_moving, b_moving, = moving_rgb_img.convert('RGB').split()
+    r_fixed, g_fixed, b_fixed = fixed_rgb_img.convert('RGB').split()
+    for moving_img, fixed_img in [(r_moving, r_fixed), (g_moving, g_fixed), (b_moving, b_fixed)]:
+        moving_img_itk = get_itk_from_pil(moving_img)
+        fixed_img_itk = get_itk_from_pil(fixed_img)
+        transformed_img = sitk.Resample(moving_img_itk, fixed_img_itk, transform, 
+                            interpolator, 0.0, moving_img_itk.GetPixelID())
+        transformed_channels.append(get_pil_from_itk(transformed_img))
+    rgb_transformed = Image.merge('RGB', transformed_channels)
+    return rgb_transformed    
+
 def save_transformation_model(transform_model, fn:Union[str, Path]):
     sitk.WriteTransform(transform_model, fn)
 

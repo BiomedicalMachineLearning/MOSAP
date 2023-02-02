@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from typing import Any, Union, Optional
 from magicgui import magic_factory
 from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QVBoxLayout, QGroupBox
-from qtpy.QtWidgets import QLabel, QComboBox, QGridLayout, QFileDialog,QProgressBar
+from qtpy.QtWidgets import QLabel, QComboBox, QGridLayout, QFileDialog, QProgressBar
 from mosap.mosap  import SpatialOmics
 import os
 # if TYPE_CHECKING:
@@ -20,7 +20,7 @@ from napari.utils.notifications import show_info
 
 # import SimpleITK as sitk
 from mosap.registration import save_transformation_model, read_transformation_model, get_itk_from_pil
-from mosap.registration import affine_registration_slides, bspline_registration_slides
+from mosap.registration import affine_registration_slides, bspline_registration_slides, sitk_transform_rgb
 class MultiOmicRegistrationWidget(QWidget):
     TRANSFORMATIONS = {
         "translation": "Translation",
@@ -95,8 +95,8 @@ class MultiOmicRegistrationWidget(QWidget):
         except Exception:
             show_info(f"Could not load transformer from {fname}")
             return
-
-        self.status.setText(f'Loaded from "{os.path.basename(fname)}"')
+        self.curr_tmat_label.setText('Loaded')
+        self.status.setText(f"{os.path.basename(fname)}")
         self.btn_tmat_save.setEnabled(True)
 
         # if image is open we can now transform it
@@ -169,7 +169,7 @@ class MultiOmicRegistrationWidget(QWidget):
         for k, v in self.TRANSFORMATIONS.items():
             self.registration_model.addItem(v, k)
             
-        self.registration_model.setCurrentText("Affine and BSpline")
+        self.registration_model.setCurrentText("Affine")
         self.registration_model.currentIndexChanged.connect(
             self._transformation_onchange
         )
@@ -181,7 +181,7 @@ class MultiOmicRegistrationWidget(QWidget):
         
         self.btn_tmat_load = QPushButton("Load")
         self.btn_tmat_save = QPushButton("Save")
-        curr_tmat_label = QLabel("Current transformation matrix")
+        self.curr_tmat_label = QLabel("Current transformer")
         self.status = QLabel("None")
         self.btn_tmat_save.setEnabled(False)
 
@@ -209,7 +209,7 @@ class MultiOmicRegistrationWidget(QWidget):
         grid.addWidget(tmat_label, 4,0)
         grid.addWidget(self.btn_tmat_load, 4,1)
         grid.addWidget(self.btn_tmat_save, 4,2)
-        grid.addWidget(curr_tmat_label, 5,0)
+        grid.addWidget(self.curr_tmat_label, 5,0)
         grid.addWidget(self.status, 5,1)
         grid.addWidget(self.btn_register, 6,0)
         grid.addWidget(self.btn_transform, 6,1)
@@ -238,6 +238,19 @@ class MultiOmicRegistrationWidget(QWidget):
         print("napari has", len(self.viewer.layers), "layers")
         print('reference image selected ', self.ref_image.currentText())
 
+    def _update_image_options(self, value: str):
+        # available_images = []
+        # for layer in  self.viewer.layers:
+        #     if isinstance(layer, napari.layers.image.image.Image):
+        #         available_images.append(layer)
+        self.moving_image.addItem(value)
+        self.ref_image.addItem(value)
+        print('updated new image option', value)
+
+    # def _ref_image_onchange(self,  value: str):
+    #     print("napari has", len(self.viewer.layers), "layers")
+    #     print('reference image selected ', self.ref_image.currentText())
+
         # if self.registration_model.currentData() == "bilinear":
         #     refs = without(self.REFERENCES, "previous")
         # else:
@@ -250,177 +263,43 @@ class MultiOmicRegistrationWidget(QWidget):
     def _run(self, action):
         import numpy as np
         from PIL import Image
+        fixed_img, moving_img = None, None
+        for layer in self.viewer.layers:
+            if layer.name == self.moving_image.currentText():
+                moving_img = layer.data
+            elif layer.name == self.ref_image.currentText():
+                fixed_img = layer.data
+            else:
+                Exception('Images not found')
         if action == 'transform':
             transformer = self.tmats
             transformation = self.registration_model.currentData()
-            print('Perform transform', transformation)
-            if transformation == 'affine':
-                pass
-            elif transformation == 'bspline':
-                pass
+            print('Perform transformation', transformation)
+            # convert to pil type image
+            pil_moving_img = Image.fromarray(moving_img)
+            pil_fixed_img = Image.fromarray(fixed_img)
+            transformed_image  =  sitk_transform_rgb(pil_moving_img, pil_fixed_img, transformer)
+            np_transformed_res = np.array(transformed_image)
+            name = transformation + "_transformed_" + self.moving_image.currentText()
+            self.viewer.add_image(np_transformed_res, name=name)
+            self._update_image_options(name)
         elif action == 'register':
+            moving_img = Image.fromarray(moving_img)
+            fixed_img = Image.fromarray(fixed_img)
+            # convert color images (3 channels) to gray scale images
+            moving_img_gray = moving_img.convert('L')
+            fixed_img_gray = fixed_img.convert('L')
+            moving_img_gray = get_itk_from_pil(moving_img_gray)
+            fixed_img_gray = get_itk_from_pil(fixed_img_gray)
             if self.registration_model.currentData() == 'affine':
                 
-                fixed_img, moving_img = None, None
-                for layer in self.viewer.layers:
-                    if layer.name == self.moving_image.currentText():
-                        moving_img = layer.data
-                    elif layer.name == self.ref_image.currentText():
-                        fixed_img = layer.data
-                    else:
-                        Exception('Images not found')
-                moving_img = Image.fromarray(moving_img)
-                fixed_img = Image.fromarray(fixed_img)
-                # convert color images (3 channels) to gray scale images
-                moving_img_gray = moving_img.convert('L')
-                fixed_img_gray = fixed_img.convert('L')
-                moving_img_gray = get_itk_from_pil(moving_img_gray)
-                fixed_img_gray = get_itk_from_pil(fixed_img_gray)
-                self.tmats = affine_registration_slides(moving_img_gray, fixed_img_gray, plot_registration_progress=False)
+                self.tmats = affine_registration_slides(fixed_img_gray,moving_img_gray,  plot_registration_progress=False)
                 show_info('Registered image: ',self.moving_image.currentText())
                 
-        # moving_average = (
-        #     self.moving_average.value()
-        #     if self.perform_moving_average.isChecked()
-        #     else 1
-        # )
+            elif self.registration_model.currentData() == 'bspline':
+                self.tmats = bspline_registration_slides(fixed_img_gray, moving_img_gray,  plot_registration_progress=False)
+                show_info('Registered image: ',self.moving_image.currentText())
 
-        # n_frames = self.n_frames.value()
-        # reference = self.reference.currentData()
-
-        # if reference not in self.REFERENCES:
-        #     raise ValueError(f'Unknown reference "{reference}"')
-
-        # image = self.image.currentData()
-
-        # self.pbar.setMaximum(image.shape[0] - 1)
-
-        # def hide_pbar():
-        #     self.pbar_label.setVisible(False)
-        #     self.pbar.setVisible(False)
-
-        # def show_pbar():
-        #     self.pbar_label.setVisible(True)
-        #     self.pbar.setVisible(True)
-
-        # @thread_worker(connect={"returned": hide_pbar}, start_thread=False)
-        # def _register_stack(image) -> ImageData:
-
-        #     sr = StackReg(transformations[transformation])
-
-        #     axis = 0
-
-        #     if action in ["register", "register_transform"]:
-        #         image_reg = image
-        #         idx_start = 1
-
-        #         if moving_average > 1:
-        #             idx_start = 0
-        #             size = [0] * len(image_reg.shape)
-        #             size[axis] = moving_average
-        #             image_reg = running_mean(
-        #                 image_reg, moving_average, axis=axis
-        #             )
-
-        #         tmatdim = 4 if transformation == "bilinear" else 3
-
-        #         tmats = np.repeat(
-        #             np.identity(tmatdim).reshape((1, tmatdim, tmatdim)),
-        #             image_reg.shape[axis],
-        #             axis=0,
-        #         ).astype(np.double)
-
-        #         if reference == "first":
-        #             ref = np.mean(
-        #                 image_reg.take(range(n_frames), axis=axis), axis=axis
-        #             )
-        #         elif reference == "mean":
-        #             ref = image_reg.mean(axis=0)
-        #             idx_start = 0
-        #         elif reference == "previous":
-        #             pass
-        #         else:  # pragma: no cover - can't be reached due to check above
-        #             raise ValueError(f'Unknown reference "{reference}"')
-
-        #         self.pbar_label.setText("Registering...")
-
-        #         iterable = range(idx_start, image_reg.shape[axis])
-
-        #         for i in iterable:
-        #             slc = [slice(None)] * len(image_reg.shape)
-        #             slc[axis] = i
-
-        #             if reference == "previous":
-        #                 ref = image_reg.take(i - 1, axis=axis)
-
-        #             tmats[i, :, :] = sr.register(
-        #                 ref, simple_slice(image_reg, i, axis)
-        #             )
-
-        #             if reference == "previous" and i > 0:
-        #                 tmats[i, :, :] = np.matmul(
-        #                     tmats[i, :, :], tmats[i - 1, :, :]
-        #                 )
-
-        #             yield i - idx_start + 1
-
-        #         self.tmats = tmats
-        #         image_name = self.image.itemText(self.image.currentIndex())
-        #         transformation_name = self.TRANSFORMATIONS[transformation]
-        #         self.status.setText(
-        #             f'Registered "{image_name}" [{transformation_name}]'
-        #         )
-        #         self.btn_tmat_save.setEnabled(True)
-
-        #     if action in ["transform", "register_transform"]:
-        #         tmats = self.tmats
-
-        #         # transform
-
-        #         out = image.copy().astype(np.float)
-
-        #         self.pbar_label.setText("Transforming...")
-        #         yield 0  # reset pbar
-
-        #         for i in range(image.shape[axis]):
-        #             slc = [slice(None)] * len(out.shape)
-        #             slc[axis] = i
-        #             out[tuple(slc)] = sr.transform(
-        #                 simple_slice(image, i, axis), tmats[i, :, :]
-        #             )
-        #             yield i
-
-        #         # convert to original dtype
-        #         if np.issubdtype(image.dtype, np.integer):
-        #             out = to_int_dtype(out, image.dtype)
-
-        #         return out
-
-        # def on_yield(x):
-        #     self.pbar.setValue(x)
-
-        # def on_return(img):
-        #     if img is None:
-        #         return
-        #     image_name = self.image.itemText(self.image.currentIndex())
-
-        #     transformation_name = self.transformation.itemText(
-        #         self.transformation.currentIndex()
-        #     )
-
-        #     layer_name = f"Registered {image_name} ({transformation_name})"
-        #     self.viewer.add_image(data=img, name=layer_name)
-
-        # self.worker = _register_stack(image)
-
-        # if running_coverage:
-            
-        #     patch_worker_for_coverage(self.worker)
-        # self.worker.yielded.connect(on_yield)
-        # self.worker.returned.connect(on_return)
-        # self.worker.start()
-
-        # show_pbar()
 
 
 # @magic_factory
