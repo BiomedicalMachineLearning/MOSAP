@@ -7,7 +7,9 @@ from typing import Tuple, List
 import tifffile
 import re
 import logging
-from mosap.mosap import SpatialOmics
+from mosap.mosap import MultiSpatialOmics
+
+
 def extract_physical_dimension(self, ome_tiff_path):
         """ A function to load the original OME tiff to extract micron resolution and pixel conversion"""
         """ return two dictionaries: one for unit conversion and the other for channel2name"""
@@ -37,7 +39,7 @@ def convert_micron2pixel(x_micron, micron_dim, scale_dim):
     """
     return (x_micron*scale_dim/micron_dim)
 
-def convert_unit_micron2pixel(spomic:SpatialOmics, original_width_micron, original_height_micron, 
+def convert_unit_micron2pixel(spomic:MultiSpatialOmics, original_width_micron, original_height_micron, 
                                   X_col:Optional[str]=None,Y_col:Optional[str]=None):
         """ Running the conversion of the unit from micron unit to pixel image """
         """ In case you do not have the conversion unit please use the original OME.tiff extract_physical_dimension"""

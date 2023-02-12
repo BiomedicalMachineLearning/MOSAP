@@ -26,7 +26,7 @@ from napari.utils.colormaps.standardize_color import transform_color
 from mosap import  CosMX_MM_PER_PX, CosMX_PX_PER_MM, CosMX_ALPHA_MM_PER_PX
 
 
-class SpatialOmics:
+class MultiSpatialOmics:
     cmaps = {
         'default': sns.color_palette('Reds', as_cmap=True),
         'category': sns.color_palette('Set3', as_cmap=True)
@@ -37,7 +37,7 @@ class SpatialOmics:
         self.graph_engine = 'networkx'
         self.random_seed = 42  # for reproducibility
         self.pickle_file = ''  # backend store
-        self.h5py_file = 'spatialOmics.h5py'  # backend store
+        self.h5py_file = 'MultiSpatialOmics.h5py'  # backend store
 
         self.obs = {}  # container for observation level features
         self.obsm = {}  # container for multidimensional observation level features
@@ -55,7 +55,7 @@ class SpatialOmics:
 
         self.images = {}
         self.masks = {}
-    def __init__(self, path:str, viewer:Optional[napari.viewer.Viewer]=None):
+    def __init__(self, path:str, viewer:Optional[napari.viewer.Viewer]=None, show_widget=False):
         """
         Initialise napari instance and display viewr
         # args: 
@@ -63,22 +63,65 @@ class SpatialOmics:
         viewer (napari.viewer.Viewer): If None, napari will be launched
         """
         assert os.path.exists(path), f"Could not find {path}"
-        
+        self.graph_engine = 'networkx'
+        self.random_seed = 42  # for reproducibility
+        self.pickle_file = ''  # backend store
+        self.h5py_file = 'spatialOmics.h5py'  # backend store
+        self.folder = path
+        self.obs = {}  # container for observation level features
+        self.obsm = {}  # container for multidimensional observation level features
+        self.spl = pd.DataFrame()  # container for sample level features
+        self.splm = {}  # container for multidimensional sample level features
+        self.var = {}  # container with variable descriptions of X
+        self.X = {}  # container for cell level expression data of each spl
+        self.G = {}  # graphs
+        self.uns = {}  # unstructured container
+        self.uns.update({'cmaps':self.cmaps,
+                         'cmap_labels': {}})
+
+        # self.obs_keys = None  # list of observations in self.obs.index
+        self.spl_keys = None  # list of samples in self.spl.index
+
+        self.images = {}
+        self.masks = {}
+        if viewer:
+            self.viewer = viewer
+        else:
+            self.viewer = napari.Viewer()
+    
+    
     def add_image(self, spl, file, in_memory=True, to_store=False):
-        """Add the image for a given sample"""
-        im = io.imread(file, plugin="tifffile")
+        # def add_segmentation(self):
+        """Add the cell segmentation image layer
+        """        
+        assert 'labels' in self.grp.group_keys(), f"labels not found in zarr keys: {self.grp.group_keys()}"
+        datasets = self.grp['labels'].attrs["multiscales"][0]["datasets"]
+        kernel = np.ones((3,3))
+        kernel[1, 1] = -8
+        labels = [da.from_zarr(os.path.join(self.folder, "images", "labels"), component=d["path"]).map_blocks(
+            # show edges
+            lambda x: ndimage.convolve(x, kernel, output=np.uint16),
+        ) for d in datasets]
+        layer = self.viewer.add_image(labels, contrast_limits=(0, 1), colormap="cyan",
+            scale=(self.mm_per_px, self.mm_per_px), translate=self._top_left_mm(), blending="additive",
+            rotate=self.rotate)
+        layer.opacity = 0.5
+        self.segmentation_layer = layer
+        layer.name = 'Segmentation'
+        # """Add the image for a given sample"""
+        # im = io.imread(file, plugin="tifffile")
 
-        if to_store:
-            path = f'images/{spl}'
-            with h5py.File(self.h5py_file, 'a') as f:
-                if path in f:
-                    del f[path]
-                f.create_dataset(path, data=im)
+        # if to_store:
+        #     path = f'images/{spl}'
+        #     with h5py.File(self.h5py_file, 'a') as f:
+        #         if path in f:
+        #             del f[path]
+        #         f.create_dataset(path, data=im)
 
-        if in_memory:
-            if spl not in self.images:
-                self.images[spl] = {}
-            self.images[spl] = im
+        # if in_memory:
+        #     if spl not in self.images:
+        #         self.images[spl] = {}
+        #     self.images[spl] = im
 
     def get_image(self, spl):
         """Get the image of a given sample"""

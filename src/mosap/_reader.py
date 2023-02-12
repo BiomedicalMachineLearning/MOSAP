@@ -7,10 +7,10 @@ https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
 import os
-from mosap.mosap import SpatialOmics
+from mosap.mosap import MultiSpatialOmics
 from mosap._widget import MultiOmicRegistrationWidget, Transcript_Selection_Widget 
 from mosap.utils.file_listing import get_files_in_dir_recursively 
-
+from napari.utils.notifications import show_info
 from skimage.io import imread
 import napari
 
@@ -67,7 +67,7 @@ def reader_function(path):
         # Only want RunSummary directory if list of paths is present
         path = path[0]
     # print("Read function with Mosap",path)
-    image = get_files_in_dir_recursively(path,'*tif')
+    image = get_files_in_dir_recursively(path,'*tiff')
     # print(image)
     # 1/0
     image = image[0]
@@ -78,10 +78,12 @@ def reader_function(path):
     #     area='right')
     if os.path.exists(image):
         data = imread(image)
+
+    viewer = napari.current_viewer()
+    mosap = MultiSpatialOmics(path, viewer=viewer, show_widget=False)
     
-    
-    # labels layer added in Gemini instance initialization
-    print('Loaded folder and created Mosap instance')
+    # labels layer added in MOSAP instance initialization
+    show_info('Loaded folder and created Mosap instance')
     # return [(None,)]
     return [
         (data, {"name": image.split('/')[-1]}, "image"),

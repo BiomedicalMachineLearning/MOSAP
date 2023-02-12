@@ -9,9 +9,9 @@ Replace code below according to your needs.
 from typing import TYPE_CHECKING
 from typing import Any, Union, Optional
 from magicgui import magic_factory
-from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QVBoxLayout, QGroupBox
+from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QVBoxLayout, QGroupBox, QFormLayout
 from qtpy.QtWidgets import QLabel, QComboBox, QGridLayout, QFileDialog, QProgressBar
-from mosap.mosap  import SpatialOmics
+from mosap.mosap  import MultiSpatialOmics
 import os
 # if TYPE_CHECKING:
 import napari
@@ -46,6 +46,16 @@ class MultiOmicRegistrationWidget(QWidget):
         self.setLayout(vbox_layout)
         
         self.createImageOptionWidget()
+    # def __init__(self, napari_viewer, mosap: MultiSpatialOmics, show_widget=False):
+    #     super().__init__()
+    #     self.viewer = napari_viewer
+    #     self.mosap = mosap
+    #     vbox_layout = QVBoxLayout(self)
+    #     vbox_layout.setContentsMargins(9, 9, 9, 9)
+
+    #     self.setLayout(vbox_layout)
+    #     if show_widget:
+    #         self.createImageOptionWidget()
 
     def _on_click(self):
         print("napari has", len(self.viewer.layers), "layers")
@@ -135,9 +145,18 @@ class MultiOmicRegistrationWidget(QWidget):
         tooltip_transformation = "Type of applied transformation."
 
         available_images = []
-        for layer in  self.viewer.layers:
-            if isinstance(layer, napari.layers.image.image.Image):
-                available_images.append(layer)
+        if len(self.viewer.layers):
+            count_img_layer = 0
+            for layer in self.viewer.layers:
+                if isinstance(layer, napari.layers.image.image.Image):
+                    count_img_layer += 1
+                    available_images.append(layer)
+            if count_img_layer == 0:
+                show_info('No image loaded')
+                raise FileNotFoundError('MOSAP: No image loaded')
+        else:
+            show_info('No image found')
+            raise FileNotFoundError('No image loaded')
 
         self.moving_image = QComboBox(groupBox)
         self.moving_image.setToolTip(tooltip_message_moving_image)
@@ -308,10 +327,14 @@ class Transcript_Selection_Widget(QWidget):
         super().__init__()
         self.viewer = napari_viewer
         # self.so = so
-        vbox_layout = QVBoxLayout(self)
-        vbox_layout.setContentsMargins(9, 9, 9, 9)
+        # vbox_layout = QVBoxLayout(self)
+        # vbox_layout.setContentsMargins(9, 9, 9, 9)
 
-        self.setLayout(vbox_layout)
+        # self.setLayout(vbox_layout)
+        layout = QFormLayout()
+
+        self.setLayout(layout)
+        self.layout = layout
         # btn = QPushButton("Click me!")
         # btn.clicked.connect(self._on_click)
 
@@ -319,47 +342,74 @@ class Transcript_Selection_Widget(QWidget):
         # self.layout().addWidget(btn)
         self.createTranscriptsWidget()
     def createTranscriptsWidget(self):
-        groupBox = QGroupBox(self, title="RNA Transcripts")
-
-        btn = QPushButton("Add layer")
+        # groupBox = QGroupBox(self, title="RNA Transcripts")
+        buttons_layout = QHBoxLayout()
+        btn = QPushButton("Select")
         btn.clicked.connect(self._on_select_rna_click)
-
-        boxp = QComboBox(groupBox)
-        # boxp.addItems(self.gem.target_labels())
+        buttons_layout.addWidget(btn)
+        boxp = QComboBox()
         boxp.addItems(['1','2','3','4','5', '6'])
-        colors = ['white', 'red', 'green', 'blue',
-            'magenta', 'yellow', 'cyan']
-        boxc = QComboBox(groupBox)
-        boxc.addItems(colors)
 
         self.targetsComboBox = boxp
         self.targetsComboBox.currentIndexChanged.connect(
             self._selected_number_target
         )
-        self.colorsComboBox = boxc
-
-        vbox = QVBoxLayout(groupBox)
-        grid = QGridLayout()
+        # vbox = QVBoxLayout()
+        # grid = QGridLayout()
+        layout = QFormLayout()
         lbl_numb_target = QLabel('Number of targets:')
         lbl_numb_target.setToolTip('Select the number of transcript to display')
-
-        grid.addWidget(lbl_numb_target, 1, 0)
-        grid.addWidget(self.targetsComboBox, 1, 1)
-        grid.addWidget(QLabel('color:'), 2, 0)
-        grid.addWidget(self.colorsComboBox, 2, 1)
-        vbox.addLayout(grid)
-        vbox.addWidget(btn)
-        groupBox.setLayout(vbox)
-
-        self.layout().addWidget(groupBox)
+        layout.addRow(lbl_numb_target, self.targetsComboBox)
+        layout.addRow(buttons_layout)
+        # grid.addWidget(lbl_numb_target, 1, 0)
+        # grid.addWidget(self.targetsComboBox, 1, 1)
+        # grid.addWidget(QLabel('Transcript:'), 2, 0)
+        # grid.addWidget(self.colorsComboBox, 2, 1)
+        # vbox.addLayout(grid)
+        # vbox.addWidget(btn)
+        # groupBox.setLayout(vbox)
+        # groupBox.setContentsMargins(0,0,0,0)
+        # groupBox.setSpacing(20)
+        self.layout.addRow(layout)
+        # self.groupbox = groupBox
 
     def _on_select_rna_click(self):
         print('Plot RNA expression function')
-        # self.gem.plot_transcripts(gene=self.targetsComboBox.currentText(),
-        # color=self.colorsComboBox.currentText())
+        # groupBox = QGroupBox(self, title="Select Markers")
+        flayout = QFormLayout()
+        # grid = QGridLayout()
+        self.list_transcripts = list()
+        self.num_transcript= int(self.targetsComboBox.currentText())
+        list_markers = ['CSF1R','IL34','CD44','AXL','MKI67', 'COL1A1']
+        for i in range(self.num_transcript):
+
+            boxp1 = QComboBox()
+            boxp1.addItems(list_markers)
+            self.list_transcripts.append(boxp1)
+            self.layout.addRow(QLabel('Transcript {0}:'.format(str(i+1))), boxp1)
+            # grid.addWidget(self.list_transcripts[i], i+1, 1)
+            # vbox.addLayout(grid)
+        # flayout.setLayout(vbox)
+        buttons_layout = QHBoxLayout()
+        btn = QPushButton("Analyse")
+        btn.clicked.connect(self._on_analyse_colocalisation_click)
+        buttons_layout.addWidget(btn)
+        # vbox.addWidget(btn)
+        self.layout.addRow(buttons_layout)
+        # self.layout().addWidget(groupBox)
+        
+            # boxp.addItems(self.gem.target_labels())
+    def _on_analyse_colocalisation_click(self):
+        print('Selected', self.num_transcript)
+        self.transcript_names = list()
+        for i in range(self.num_transcript):
+            print(self.list_transcripts[i].currentText())
+            self.transcript_names.append(self.list_transcripts[i].currentText())
+        show_info("Display layers: "+ ' '.join(self.transcript_names))
+
     
     def _selected_number_target(self):
-        print('Selected:', self.targetsComboBox.currentData())
+        print('Selected:', self.targetsComboBox.currentText())
 
 
 
