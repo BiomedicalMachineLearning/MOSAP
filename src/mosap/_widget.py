@@ -27,10 +27,7 @@ class MultiOmicRegistrationWidget(QWidget):
         "scaled_rotation": "Scaled Rotation",
         "affine": "Affine",
         "bilinear": "Bilinear",
-        "bspline":'BSpline',
-        "affine_bilinear":'Affine and Bilinear',
-        "affine_bspline":'Affine and BSpline',
-        "bspline_bilinear":'BSpline and Bilinear'
+        "bspline":'BSpline'
     }
     # your QWidget.__init__ can optionally request the napari viewer instance
     # in one of two ways:
@@ -416,5 +413,34 @@ class Transcript_Selection_Widget(QWidget):
 # Uses the `autogenerate: true` flag in the plugin manifest
 # to indicate it should be wrapped as a magicgui to autogenerate
 # a widget.
-def Heterogeneity_Vis_widget(img_layer: "napari.layers.Image"):
-    print(f"you have selected Heterogeneity widget {img_layer}")
+class Heterogeneity_Vis_widget(QWidget):
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
+        # self.so = so
+        # vbox_layout = QVBoxLayout(self)
+        # vbox_layout.setContentsMargins(9, 9, 9, 9)
+
+        # self.setLayout(vbox_layout)
+        layout = QFormLayout()
+
+        self.setLayout(layout)
+        self.layout = layout
+        # btn = QPushButton("Click me!")
+        # btn.clicked.connect(self._on_click)
+
+        # self.setLayout(QHBoxLayout())
+        # self.layout().addWidget(btn)
+        self.createSpatialNetworkWidget()
+    def createSpatialNetworkWidget(self):
+        
+        boxp = QComboBox()
+        boxp.addItems(['KNN','Radius','Delauney', 'Contact'])
+        self.targetsComboBox = boxp
+        self.targetsComboBox.currentIndexChanged.connect(
+            self._selected_graph_model
+        )
+        
+
+# def Heterogeneity_Vis_widget(img_layer: "napari.layers.Image"):
+    # print(f"you have selected Heterogeneity widget {img_layer}")
