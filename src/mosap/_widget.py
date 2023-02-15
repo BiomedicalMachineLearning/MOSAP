@@ -358,15 +358,6 @@ class Transcript_Selection_Widget(QWidget):
         lbl_numb_target.setToolTip('Select the number of transcript to display')
         layout.addRow(lbl_numb_target, self.targetsComboBox)
         layout.addRow(buttons_layout)
-        # grid.addWidget(lbl_numb_target, 1, 0)
-        # grid.addWidget(self.targetsComboBox, 1, 1)
-        # grid.addWidget(QLabel('Transcript:'), 2, 0)
-        # grid.addWidget(self.colorsComboBox, 2, 1)
-        # vbox.addLayout(grid)
-        # vbox.addWidget(btn)
-        # groupBox.setLayout(vbox)
-        # groupBox.setContentsMargins(0,0,0,0)
-        # groupBox.setSpacing(20)
         self.layout.addRow(layout)
         # self.groupbox = groupBox
 
@@ -403,7 +394,7 @@ class Transcript_Selection_Widget(QWidget):
             print(self.list_transcripts[i].currentText())
             self.transcript_names.append(self.list_transcripts[i].currentText())
         show_info("Display layers: "+ ' '.join(self.transcript_names))
-
+        
     
     def _selected_number_target(self):
         print('Selected:', self.targetsComboBox.currentText())
@@ -417,30 +408,36 @@ class Heterogeneity_Vis_widget(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-        # self.so = so
-        # vbox_layout = QVBoxLayout(self)
-        # vbox_layout.setContentsMargins(9, 9, 9, 9)
 
-        # self.setLayout(vbox_layout)
         layout = QFormLayout()
 
         self.setLayout(layout)
         self.layout = layout
-        # btn = QPushButton("Click me!")
-        # btn.clicked.connect(self._on_click)
 
-        # self.setLayout(QHBoxLayout())
-        # self.layout().addWidget(btn)
         self.createSpatialNetworkWidget()
     def createSpatialNetworkWidget(self):
         
         boxp = QComboBox()
-        boxp.addItems(['KNN','Radius','Delauney', 'Contact'])
-        self.targetsComboBox = boxp
-        self.targetsComboBox.currentIndexChanged.connect(
+        boxp.addItems(['KNN','Radius','Delaunay triangulation', 'Contact'])
+        self.networkbox= boxp
+        self.networkbox.currentIndexChanged.connect(
             self._selected_graph_model
         )
-        
+        buttons_layout = QHBoxLayout()
+        btn = QPushButton("Select")
+        btn.clicked.connect(self._on_select_method)
+        buttons_layout.addWidget(btn)
+        layout = QFormLayout()
+        lbl_spatial_nw = QLabel('Spatial cellular network:')
+        lbl_spatial_nw.setToolTip('Select the spatial cellular network')
+        layout.addRow(lbl_spatial_nw, self.networkbox)
+        layout.addRow(buttons_layout)
+        self.layout.addRow(layout)
 
+    def _on_select_method(self):
+        print('selected network models', self.networkbox.currentText())
+
+    def _selected_graph_model(self):
+        print('current network models',self.networkbox.currentText())
 # def Heterogeneity_Vis_widget(img_layer: "napari.layers.Image"):
     # print(f"you have selected Heterogeneity widget {img_layer}")
