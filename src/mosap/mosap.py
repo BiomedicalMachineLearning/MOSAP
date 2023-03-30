@@ -26,7 +26,7 @@ from napari.utils.colormaps.standardize_color import transform_color
 from mosap import  CosMX_MM_PER_PX, CosMX_PX_PER_MM, CosMX_ALPHA_MM_PER_PX
 
 
-class MultiSpatialOmics:
+class MOSADATA:
     cmaps = {
         'default': sns.color_palette('Reds', as_cmap=True),
         'category': sns.color_palette('Set3', as_cmap=True)
@@ -37,7 +37,7 @@ class MultiSpatialOmics:
         self.graph_engine = 'networkx'
         self.random_seed = 42  # for reproducibility
         self.pickle_file = ''  # backend store
-        self.h5py_file = 'MultiSpatialOmics.h5py'  # backend store
+        self.h5py_file = 'MOSADATA.h5py'  # backend store
 
         self.obs = {}  # container for observation level features
         self.obsm = {}  # container for multidimensional observation level features
@@ -298,7 +298,7 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
 
         """
 
-        so = MultiSpatialOmics()
+        so = MOSADATA()
 
         with h5py.File(file, 'r') as f:
             so.h5py_file = str(f['h5py_file'][...])

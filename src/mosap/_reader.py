@@ -7,7 +7,7 @@ https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
 import os
-from mosap.mosap import MultiSpatialOmics
+from mosap.mosap import MOSADATA
 from mosap._widget import MultiOmicRegistrationWidget, Transcript_Selection_Widget 
 from mosap.utils.file_listing import get_files_in_dir_recursively 
 from napari.utils.notifications import show_info
@@ -80,7 +80,7 @@ def reader_function(path):
         data = imread(image)
 
     viewer = napari.current_viewer()
-    mosap = MultiSpatialOmics(path, viewer=viewer, show_widget=False)
+    mosap = MOSADATA(path, viewer=viewer, show_widget=False)
     
     # labels layer added in MOSAP instance initialization
     show_info('Loaded folder and created Mosap instance')
