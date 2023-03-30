@@ -298,7 +298,7 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
 
         """
 
-        so = SpatialOmics()
+        so = MultiSpatialOmics()
 
         with h5py.File(file, 'r') as f:
             so.h5py_file = str(f['h5py_file'][...])

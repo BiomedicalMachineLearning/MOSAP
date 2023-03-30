@@ -398,6 +398,7 @@ class Transcript_Selection_Widget(QWidget):
     
     def _selected_number_target(self):
         print('Selected:', self.targetsComboBox.currentText())
+        
 
 
 
