@@ -12,6 +12,8 @@
 
 
 
+
+
 The package is developed in Python and require napari to run the GUI
 
 A popular way to install Python is via the [Anaconda](https://www.anaconda.com/products/individual) platform. 
@@ -37,6 +39,11 @@ You can install `mosap` via [pip]:
 
     pip install mosap
 
+## Tutorial
+
+### Tissue registration
+
+### 
 
 ## License
 
