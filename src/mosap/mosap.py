@@ -35,8 +35,6 @@ class MOSADATA:
     def __init__(self):
 
         self.graph_engine = 'networkx'
-        self.random_seed = 42  # for reproducibility
-        self.pickle_file = ''  # backend store
         self.h5py_file = 'MOSADATA.h5py'  # backend store
 
         self.obs = {}  # container for observation level features
@@ -54,7 +52,6 @@ class MOSADATA:
         self.spl_keys = None  # list of samples in self.spl.index
 
         self.images = {}
-        self.masks = {}
     def __init__(self, path:str, viewer:Optional[napari.viewer.Viewer]=None, show_widget=False):
         """
         Initialise napari instance and display viewr
@@ -153,17 +150,17 @@ class MOSADATA:
                 self.masks[spl] = {}
             self.masks[spl][mask] = im
 
-    def get_mask(self, spl, mask):
-        """Get a particular mask of a given sample"""
-        if spl in self.masks and mask in self.masks[spl]:
-            return self.masks[spl][mask]
-        else:
-            with h5py.File(self.h5py_file, 'r') as f:
-                path = f'masks/{spl}/{mask}'
-                if path in f:
-                    return f[path][...]
-                else:
-                    raise KeyError(f'no {mask} mask exists for {spl}.')
+    # def get_mask(self, spl, mask):
+    #     """Get a particular mask of a given sample"""
+    #     if spl in self.masks and mask in self.masks[spl]:
+    #         return self.masks[spl][mask]
+    #     else:
+    #         with h5py.File(self.h5py_file, 'r') as f:
+    #             path = f'masks/{spl}/{mask}'
+    #             if path in f:
+    #                 return f[path][...]
+    #             else:
+    #                 raise KeyError(f'no {mask} mask exists for {spl}.')
 
     def __str__(self):
         l = [len(self.obs[i]) for i in self.obs]
@@ -178,28 +175,21 @@ class MOSADATA:
         [cols_var.update((self.var[i].columns)) for i in self.var]
         cols_var = [*cols_var]
 
-        mask_names = set()
-        [mask_names.update((self.masks[i].keys())) for i in self.masks]
-        mask_names = [mask_names]
-
         graph_names = set()
         [graph_names.update((self.G[i].keys())) for i in self.G]
         graph_names = [*graph_names]
 
-        s = f"""
-SpatialOmics object with {sum(l)} observations across {len(l)} samples.
-    X: {len(self.X)} samples,
-    spl: {len(self.spl)} samples,
-        columns: {cols_spl}
-    obs: {len(self.spl)} samples,
-        columns: {cols_obs}
-    var: {len(self.var)} samples,
-        columns: {cols_var}
-    G: {len(self.G)} samples,
-        keys: {graph_names}
-    masks: {len(self.masks)} samples
-        keys: {mask_names}
-    images: {len(self.images)} samples"""
+        s = f"""MOSADATA object with {sum(l)} observations across {len(l)} samples.
+                    X: {len(self.X)} samples,
+                    spl: {len(self.spl)} samples,
+                        columns: {cols_spl}
+                    obs: {len(self.spl)} samples,
+                        columns: {cols_obs}
+                    var: {len(self.var)} samples,
+                        columns: {cols_var}
+                    G: {len(self.G)} samples,
+                        keys: {graph_names}
+                    images: {len(self.images)} samples"""
         return s
 
     def __repr__(self):
@@ -243,15 +233,6 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
             if self.uns:
                 print(
                     'warning: in the current implementation, the `uns` attribute is not stored to h5py file. Use `to_pickle` instead')
-                # f.attrs['uns'] = {}
-                # keys = self.uns.keys()
-                # print_warning = False
-                # for key in keys:
-                #     if key in ['cmaps', 'cmap_labels']:
-                #         f.attrs.update(self.uns[key])
-                #     else:
-                #         print_warning = True
-                # if print_warning:
 
         # we need to write the dataframes outside the context manager because the file is locked
         # spl
@@ -341,14 +322,6 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
                         so.images[spl] = {}
                     so.images[spl] = f[f'images/{spl}'][...]
 
-            # masks
-            if 'masks' in f:
-                for spl in f['masks'].keys():
-                    if spl not in so.masks:
-                        so.masks[spl] = {}
-                    for key in f[f'masks/{spl}']:
-                        so.masks[spl][key] = f[f'masks/{spl}/{key}'][...]
-
         return so
 
     def to_pickle(self, file: str = None) -> None:
@@ -415,30 +388,30 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
         else:
             sample_name = ad.obs[sample_id][0]
 
-        so = SpatialOmics()
+        md = MOSADATA()
         x = pd.DataFrame(ad.X.A if issparse(ad.X) else ad.X, columns=ad.var.index)
 
-        so.X = {sample_name: x}
-        so.obs = {sample_name: ad.obs}
-        so.var = {sample_name: ad.var}
-        so.spl = pd.DataFrame(index=[sample_name])
+        md.X = {sample_name: x}
+        md.obs = {sample_name: ad.obs}
+        md.var = {sample_name: ad.var}
+        md.spl = pd.DataFrame(index=[sample_name])
 
         if 'spatial' in ad.obsm:
             coord = ad.obsm['spatial']
-            coord = pd.DataFrame(coord, index=so.obs[sample_name].index, columns=['x','y'])
-            so.obs[sample_name] = pd.concat((so.obs[sample_name], coord), 1)
+            coord = pd.DataFrame(coord, index=md.obs[sample_name].index, columns=['x','y'])
+            md.obs[sample_name] = pd.concat((md.obs[sample_name], coord), 1)
 
         if img_container is not None:
             img = img_container[img_layer]
-            so.images = {sample_name: img}
+            md.images = {sample_name: img}
 
-            segmentations = {}
-            for i in segmentation_layers:
-                if i in img_container:
-                    segmentations.update({i:img_container[i]})
-            so.masks.update({sample_name:segmentations})
+            # segmentations = {}
+            # for i in segmentation_layers:
+            #     if i in img_container:
+            #         segmentations.update({i:img_container[i]})
+            # md.masks.update({sample_name:segmentations})
 
-        return so
+        return md
 
     def to_annData(self,
         one_adata=True,
@@ -499,5 +472,12 @@ SpatialOmics object with {sum(l)} observations across {len(l)} samples.
 
                 ads.append(ad)
             return ads
-
+def add2uns(mosadata, res, spl: str, parent_key, key_added):
+    if spl in mosadata.uns:
+        if parent_key in mosadata.uns[spl]:
+            mosadata.uns[spl][parent_key][key_added] = res
+        else:
+            mosadata.uns[spl].update({parent_key: {key_added: res}})
+    else:
+        mosadata.uns.update({spl: {parent_key: {key_added: res}}})
 
