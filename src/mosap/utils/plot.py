@@ -7,7 +7,7 @@ from typing import Tuple, List
 import tifffile
 import re
 import logging
-from mosap.mosap import MOSADATA
+from mosap.mosadata import MOSADATA
 
 
 def extract_physical_dimension(self, ome_tiff_path):
