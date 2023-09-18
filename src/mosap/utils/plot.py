@@ -120,10 +120,7 @@ def custom_spatial(mosadata:MOSADATA, sample: str, attr: str, *, mode: str = 'sc
             norm=None, set_title: bool = True, cmap=None, cmap_labels: list = None, cbar: bool = True,
             cbar_title: bool = True, show: bool = True, save: str = None, tight_layout: bool = True):
     """Various functionalities to visualise samples.
-    Allows to visualise the samples and color observations according to features in either so.X or so.obs by setting the ``attr`` parameter accordingly.
-    Furthermore, observations (cells) within a sample can be quickly visualised using scatter plots (requires extraction of centroids with :func:`~.extract_centroids`)
-    or by their actual segmentatio mask by setting ``mode`` accordingly.
-    Finally, the graph representation of the sample can be overlayed by setting ``edges=True`` and specifing the ``graph_key`` as in ``mosadata.G[spl][graph_key]``.
+   the graph representation of the sample can be overlayed by setting ``edges=True`` and specifing the ``graph_key`` as in ``mosadata.G[sample][graph_key]``.
     Args:
         mosadata: MOSADATA object
         sample: sample to visualise
@@ -153,7 +150,6 @@ def custom_spatial(mosadata:MOSADATA, sample: str, attr: str, *, mode: str = 'sc
             so = sh.dataset.imc()
             sh.pl.spatial(so, 'slide_7_Cy2x2', 'meta_id', mode='mask')
             sh.pl.spatial(so, 'slide_7_Cy2x2', 'meta_id', mode='scatter', edges=True)
-    .. _tutorial: https://ai4scr.github.io/ATHENA/source/tutorial.html
     """
     # get attribute information
     data = None  # pd.Series/array holding the attr for colormapping
@@ -268,7 +264,7 @@ def custom_spatial(mosadata:MOSADATA, sample: str, attr: str, *, mode: str = 'sc
 #     ax.set_ylabel('spatial y', label_fontdict)
     ax.set_aspect(1)
     if set_title:
-        title = f'{spl}' if cbar else f'{spl}, {attr}'
+        title = f'{sample}' if cbar else f'{sample}, {attr}'
         ax.set_title(title, {'size': 15})
 
     if tight_layout:
@@ -284,17 +280,9 @@ def custom_spatial(mosadata:MOSADATA, sample: str, attr: str, *, mode: str = 'sc
 def get_cmap(mosadata, attr: str, data):
     '''
     Return the cmap and cmap labels for a given attribute if available, else a default
-    Parameters
+    mosadata: extract the cmaps instance from uns
     ----------
-    so: IMCData
-        so object form which to fetch the data
-    spl: str
-        spl for which to get data
-    attr: str
-        attribute for which to get the cmap and cmap labels if available
-    Returns
-    -------
-    cmap and cmap labels for attribute
+    
     '''
 
     # TODO: recycle cmap if more observations than colors
