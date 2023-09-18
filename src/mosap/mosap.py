@@ -105,20 +105,6 @@ class MOSADATA:
         layer.opacity = 0.5
         self.segmentation_layer = layer
         layer.name = 'Segmentation'
-        # """Add the image for a given sample"""
-        # im = io.imread(file, plugin="tifffile")
-
-        # if to_store:
-        #     path = f'images/{spl}'
-        #     with h5py.File(self.h5py_file, 'a') as f:
-        #         if path in f:
-        #             del f[path]
-        #         f.create_dataset(path, data=im)
-
-        # if in_memory:
-        #     if spl not in self.images:
-        #         self.images[spl] = {}
-        #     self.images[spl] = im
 
     def get_image(self, spl):
         """Get the image of a given sample"""
@@ -131,36 +117,6 @@ class MOSADATA:
                     return f[path][:]
                 else:
                     raise KeyError(f'no images exists for {spl}.')
-
-    def add_mask(self, spl, mask, file, in_memory=True, to_store=False):
-        """Add a mask for a given sample"""
-        im = np.squeeze(io.imread(file))
-        if im.ndim != 2:
-            raise ValueError('provided mask image is not 2D')
-
-        if to_store:
-            path = f'masks/{spl}/{mask}'
-            with h5py.File(self.h5py_file, 'a') as f:
-                if path in f:
-                    del f[path]
-                f.create_dataset(path, data=im)
-
-        if in_memory:
-            if spl not in self.masks:
-                self.masks[spl] = {}
-            self.masks[spl][mask] = im
-
-    # def get_mask(self, spl, mask):
-    #     """Get a particular mask of a given sample"""
-    #     if spl in self.masks and mask in self.masks[spl]:
-    #         return self.masks[spl][mask]
-    #     else:
-    #         with h5py.File(self.h5py_file, 'r') as f:
-    #             path = f'masks/{spl}/{mask}'
-    #             if path in f:
-    #                 return f[path][...]
-    #             else:
-    #                 raise KeyError(f'no {mask} mask exists for {spl}.')
 
     def __str__(self):
         l = [len(self.obs[i]) for i in self.obs]
@@ -200,12 +156,10 @@ class MOSADATA:
 
     def to_h5py(self, file: str = None) -> None:
         """
-
         Args:
             file: file to write to, defaults to self.h5py_file
 
         Returns:
-
         """
         if file is None:
             file = self.h5py_file
@@ -221,12 +175,6 @@ class MOSADATA:
             for spl in self.images:
                 img = self.images[spl]
                 f.create_dataset(f'images/{spl}', data=img)
-
-            # masks
-            for spl in self.masks:
-                for key in self.masks[spl].keys():
-                    msk = self.masks[spl][key]
-                    f.create_dataset(f'masks/{spl}/{key}', data=msk)
 
             # uns
             # TODO: currently we do not support storing uns to h5py due to datatype restrictions
@@ -279,50 +227,50 @@ class MOSADATA:
 
         """
 
-        so = MOSADATA()
+        mosadt = MOSADATA()
 
         with h5py.File(file, 'r') as f:
-            so.h5py_file = str(f['h5py_file'][...])
+            mosadt.h5py_file = str(f['h5py_file'][...])
 
             # obs
             if 'obs' in f:
                 for spl in f['obs'].keys():
-                    so.obs[spl] = pd.read_hdf(file, f'obs/{spl}')
+                    mosadt.obs[spl] = pd.read_hdf(file, f'obs/{spl}')
 
             # obsm
             if 'obsm' in f:
                 for spl in f['obsm'].keys():
-                    so.obsm[spl] = f[f'obsm/{spl}'][...]
+                    mosadt.obsm[spl] = f[f'obsm/{spl}'][...]
 
             # spl
-            so.spl = pd.read_hdf(file, 'spl')
+            mosadt.spl = pd.read_hdf(file, 'spl')
 
             # var
             if 'var' in f:
                 for spl in f['var'].keys():
-                    so.var[spl] = pd.read_hdf(file, f'var/{spl}')
+                    mosadt.var[spl] = pd.read_hdf(file, f'var/{spl}')
 
             # X
             if 'X' in f:
                 for spl in f['X'].keys():
-                    so.X[spl] = pd.read_hdf(file, f'X/{spl}')
+                    mosadt.X[spl] = pd.read_hdf(file, f'X/{spl}')
 
             # G
             if 'G' in f:
                 for spl in f['G'].keys():
-                    if spl not in so.G:
-                        so.G[spl] = {}
+                    if spl not in smosadto.G:
+                        mosadt.G[spl] = {}
                     for key in f[f'G/{spl}'].keys():
-                        so.G[spl][key] = nx.from_pandas_edgelist(pd.read_hdf(file, f'G/{spl}/{key}'))
+                        mosadt.G[spl][key] = nx.from_pandas_edgelist(pd.read_hdf(file, f'G/{spl}/{key}'))
 
             # images
             if 'images' in f:
                 for spl in f['images'].keys():
-                    if spl not in so.images:
-                        so.images[spl] = {}
-                    so.images[spl] = f[f'images/{spl}'][...]
+                    if spl not in mosadt.images:
+                        mosadt.images[spl] = {}
+                    mosadt.images[spl] = f[f'images/{spl}'][...]
 
-        return so
+        return mosadt
 
     def to_pickle(self, file: str = None) -> None:
         """Save spatialOmics instance to pickle.
@@ -415,14 +363,14 @@ class MOSADATA:
 
     def to_annData(self,
         one_adata=True,
-        spatial_keys_so=['x', 'y'],
+        spatial_keys_mosadt=['x', 'y'],
         spatial_key_ad='spatial'):
         """Converts the current SpatialOmics instance into a AnnData instance.
         Does only takes .X, .obs and .var attributes into account.
 
         Args:
             one_adata: bool whether for each sample a individual AnnData should be created
-            spatial_keys_so: tuple column names of spatial coordinates of observations in so.obs[spl]
+            spatial_keys_mosadt: tuple column names of spatial coordinates of observations in mosadt.obs[spl]
             spatial_key_ad: str key added to ad.obsm to store the spatial coordinates
 
         Returns:
@@ -434,40 +382,40 @@ class MOSADATA:
         except ImportError as e:
             raise ImportError('Please install AnnData with `pip install anndata')
 
-        so = self
+        mosadt = self
 
         if one_adata:
-            keys = list(so.obs.keys())
+            keys = list(mosadt.obs.keys())
             # we iterate through the keys to ensure that we have the order of the different dicts aligned
             # we could apply pd.concat directly on the dicts
 
-            X = pd.concat([so.X[i] for i in keys])
-            obs = pd.concat([so.obs[i] for i in keys])
+            X = pd.concat([mosadt.X[i] for i in keys])
+            obs = pd.concat([mosadt.obs[i] for i in keys])
             obs.index = range(len(obs))
-            var = so.var[keys[0]]
+            var = mosadt.var[keys[0]]
 
             # create AnnData
             ad = AnnData(X=X.values, obs=obs, var=var)
 
             # import spatial coordinates
-            if all([i in obs for i in spatial_keys_so]):
-                spatial_coord = ad.obs[spatial_keys_so]
-                ad.obs = ad.obs.drop(columns=spatial_keys_so)
+            if all([i in obs for i in spatial_keys_mosadt]):
+                spatial_coord = ad.obs[spatial_keys_mosadt]
+                ad.obs = ad.obs.drop(columns=spatial_keys_mosadt)
                 ad.obsm.update({spatial_key_ad: spatial_coord.values})
 
             return ad
 
         else:
             ads = []
-            for spl in so.obs.keys():
+            for spl in mosadt.obs.keys():
 
                 # create AnnData
-                ad = AnnData(X=so.X[spl].values, obs=so.obs[spl], var=so.var[spl])
+                ad = AnnData(X=mosadt.X[spl].values, obs=mosadt.obs[spl], var=mosadt.var[spl])
 
                 # import spatial coordinates
-                if all([i in ad.obs for i in spatial_keys_so]):
-                    spatial_coord = ad.obs[spatial_keys_so]
-                    ad.obs = ad.obs.drop(columns=spatial_keys_so)
+                if all([i in ad.obs for i in spatial_keys_mosadt]):
+                    spatial_coord = ad.obs[spatial_keys_mosadt]
+                    ad.obs = ad.obs.drop(columns=spatial_keys_mosadt)
                     ad.obsm.update({spatial_key_ad: spatial_coord.values})
 
                 ads.append(ad)
