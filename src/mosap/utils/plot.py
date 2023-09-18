@@ -113,8 +113,8 @@ def savefig(fig, save):
 #         save = os.path.join(plt.rcParams['savefig.directory'], save)
     fig.savefig(save)
     print(f'Figure saved at: {save}')
-# the script below implemented the network visualisation using plotting script from ATHENA
-def custom_spatial(mosadata:MOSADATA, spl: str, attr: str, *, mode: str = 'scatter', node_size: float = 4, coordinate_keys: list = ['x', 'y'],
+# the script below implemented the network visualisation using plotting script inspired by ATHENA plotting function
+def custom_spatial(mosadata:MOSADATA, sample: str, attr: str, *, mode: str = 'scatter', node_size: float = 4, coordinate_keys: list = ['x', 'y'],
             mask_key: str = 'cellmasks', graph_key: str = 'knn', edges: bool = False, edge_width: float = .5,
             edge_color: str = 'black', edge_zorder: int = 2, background_color: str = 'white', ax: plt.Axes = None,
             norm=None, set_title: bool = True, cmap=None, cmap_labels: list = None, cbar: bool = True,
@@ -125,12 +125,12 @@ def custom_spatial(mosadata:MOSADATA, spl: str, attr: str, *, mode: str = 'scatt
     or by their actual segmentatio mask by setting ``mode`` accordingly.
     Finally, the graph representation of the sample can be overlayed by setting ``edges=True`` and specifing the ``graph_key`` as in ``mosadata.G[spl][graph_key]``.
     Args:
-        mosadata: MOSADATA instance
-        spl: sample to visualise
+        mosadata: MOSADATA object
+        sample: sample to visualise
         attr: feature to visualise
         mode: {scatter, mask}. In `scatter` mode, observations are represented by their centroid, in `mask` mode by their actual segmentation mask
         node_size: size of the node when plotting the graph representation
-        coordinate_keys: column names in SpatialOmics.obs[spl] that indicates the x and y coordinates
+        coordinate_keys: column names in MOSADATA.obs[sample] that indicates the x and y coordinates
         mask_key: key for the segmentation masks when in `mask` mode
         graph_key: which graph representation to use
         edges: whether to plot the graph or not
@@ -161,10 +161,10 @@ def custom_spatial(mosadata:MOSADATA, spl: str, attr: str, *, mode: str = 'scatt
 
     # try to fetch the attr data
     if attr:
-        if attr in mosadata.obs[spl].columns:
-            data = mosadata.obs[spl][attr]
-        elif attr in mosadata.X[spl].columns:
-            data = mosadata.X[spl][attr]
+        if attr in mosadata.obs[sample].columns:
+            data = mosadata.obs[sample][attr]
+        elif attr in mosadata.X[sample].columns:
+            data = mosadata.X[sample][attr]
         else:
             raise KeyError(f'{attr} is not an column of X nor obs')
     else:
@@ -175,7 +175,7 @@ def custom_spatial(mosadata:MOSADATA, spl: str, attr: str, *, mode: str = 'scatt
     # broadcast if necessary
     _is_categorical_flag = is_categorical_dtype(data)
 
-    loc = mosadata.obs[spl][coordinate_keys].copy()
+    loc = mosadata.obs[sample][coordinate_keys].copy()
 
     # set colormap
     if cmap is None:
@@ -203,7 +203,7 @@ def custom_spatial(mosadata:MOSADATA, spl: str, attr: str, *, mode: str = 'scatt
 
     # compute edge lines
     if edges:
-        g = mosadata.G[spl][graph_key]
+        g = mosadata.G[sample][graph_key]
         e = np.array(g.edges, dtype=type(loc.index.dtype))
 
         tmp1 = loc.loc[e.T[0]]
