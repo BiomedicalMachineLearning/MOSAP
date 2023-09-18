@@ -7,7 +7,7 @@ https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
 import os
-from mosap.mosap import MOSADATA
+from mosap.mosadata import MOSADATA
 from mosap._widget import MultiOmicRegistrationWidget, Transcript_Selection_Widget 
 from mosap.utils.file_listing import get_files_in_dir_recursively 
 from napari.utils.notifications import show_info

@@ -11,7 +11,7 @@ from typing import Any, Union, Optional
 from magicgui import magic_factory
 from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QVBoxLayout, QGroupBox, QFormLayout
 from qtpy.QtWidgets import QLabel, QComboBox, QGridLayout, QFileDialog, QProgressBar
-from mosap.mosap  import MOSADATA
+from mosap.mosadata  import MOSADATA
 import os
 # if TYPE_CHECKING:
 import napari
@@ -36,7 +36,7 @@ class MultiOmicRegistrationWidget(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-        # self.so = so
+        self.mosadata = MOSADATA()
         vbox_layout = QVBoxLayout(self)
         vbox_layout.setContentsMargins(9, 9, 9, 9)
 
