@@ -33,16 +33,27 @@ you need to install `napari` to properly run mosap package.
 pip install "napari[all]"
 ```
 
+For Mac M1, it is recommended to use conda to install napari
 
+```
+conda install -c conda-forge napari pyqt
+```
 
-You can install `mosap` via [pip]:
+To build the package from source, use
+
+```
+pip install -e .
+```
+
+[To be updated] You can install `mosap` via [pip]:
 
     pip install mosap
+
 
 ## Tutorial
 
 ### Tissue registration
-
+Please refer to the jupter notebook under the tutorial
 ### 
 
 ## License
@@ -51,6 +62,11 @@ Distributed under the terms of the [BSD-3] license,
 "mosap" is free and open source software
 
 ## Issues
+For Mac M1, you may encounter the issue with `numcodecs`, please try to install with conda
+
+```
+conda install -c conda-forge numcodecs
+```
 
 If you encounter any problems, please [file an issue] along with a detailed description.
 
