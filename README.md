@@ -39,7 +39,7 @@ For Mac M1, it is recommended to use conda to install napari
 conda install -c conda-forge napari pyqt
 ```
 
-To build the package from source, use
+To build the package from source, you can clone this repository and use
 
 ```
 pip install -e .
